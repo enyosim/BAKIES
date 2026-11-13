@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Lock, RotateCcw, Search, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { CheckCircle2, Lock, RotateCcw, Search, X } from 'lucide-react';
 import {
   BAKIES_DATABASE,
   TOTAL_STICKERS,
@@ -7,6 +7,7 @@ import {
   type BakieVariant,
 } from '../data/bakies';
 import { BakieImage } from './BakieImage';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 type StatusFilter = 'all' | 'unlocked' | 'locked';
 
@@ -29,6 +30,20 @@ export function AlbumView({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  useBodyScrollLock(showResetConfirm);
+
+  useEffect(() => {
+    if (!showResetConfirm) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        setShowResetConfirm(false);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [showResetConfirm]);
 
   const completedSpeciesCount = useMemo(() => {
     return BAKIES_DATABASE.filter((sp) =>
@@ -66,25 +81,51 @@ export function AlbumView({
   const completionPct = Math.round((uniqueCollected / TOTAL_STICKERS) * 100);
 
   return (
-    <div className="space-y-6">
-      {/* Header + Summary */}
-      <div className="bg-white/85 backdrop-blur-md border-2 border-[#f1dccb] rounded-[30px] p-5 sm:p-6 shadow-[0_12px_30px_rgba(120,53,15,0.07)]">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#632d0c]">
-              Tu Álbum de Bakies
-            </h1>
-            <p className="mt-1 text-sm sm:text-base font-semibold text-[#8c6245] tabular-nums">
-              {uniqueCollected} / {TOTAL_STICKERS} stickers ({completionPct}%) ·{' '}
-              {completedSpeciesCount} / {BAKIES_DATABASE.length} especies completas ·{' '}
-              {packsOpened} {packsOpened === 1 ? 'sobre' : 'sobres'}
-            </p>
+    <div className="space-y-5 sm:space-y-6">
+      {/* Header + Summary + Filters */}
+      <div className="bg-white/95 border-2 border-[#f1dccb] rounded-[28px] sm:rounded-[30px] p-4 sm:p-6 shadow-[0_12px_30px_rgba(120,53,15,0.07)]">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex items-center justify-between gap-3">
+              <h1 className="font-display text-2xl sm:text-3xl font-bold text-[#632d0c] truncate">
+                Tu Álbum de Bakies
+              </h1>
+              {packsOpened > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowResetConfirm(true)}
+                  className="lg:hidden min-h-[40px] px-3 py-1.5 rounded-full text-xs font-bold text-[#8c6245] hover:text-rose-600 bg-[#fff7ef] border border-[#ebd5c1] hover:border-rose-200 transition-colors inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-rose-500"
+                  title="Reiniciar colección"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                  <span>Reiniciar</span>
+                </button>
+              )}
+            </div>
+
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs sm:text-sm font-semibold text-[#8c6245] tabular-nums">
+              <span className="whitespace-nowrap">
+                {uniqueCollected} / {TOTAL_STICKERS} stickers ({completionPct}%)
+              </span>
+              <span className="text-[#c8a88b]" aria-hidden="true">
+                ·
+              </span>
+              <span className="whitespace-nowrap">
+                {completedSpeciesCount} / {BAKIES_DATABASE.length} especies completas
+              </span>
+              <span className="text-[#c8a88b]" aria-hidden="true">
+                ·
+              </span>
+              <span className="whitespace-nowrap">
+                {packsOpened} {packsOpened === 1 ? 'sobre' : 'sobres'}
+              </span>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex items-center gap-2.5 shrink-0">
             {/* Status filter segmented control */}
             <div
-              className="inline-flex items-center p-1 bg-[#f7eadc] border border-[#e7cbb2] rounded-full"
+              className="w-full sm:w-auto grid grid-cols-3 sm:inline-flex items-center p-1 bg-[#f7eadc] border border-[#e7cbb2] rounded-full"
               role="group"
               aria-label="Filtrar por estado de colección"
             >
@@ -99,7 +140,7 @@ export function AlbumView({
                   key={tab.id}
                   type="button"
                   onClick={() => setStatusFilter(tab.id)}
-                  className={`min-h-[38px] px-3.5 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-rose-500 ${
+                  className={`min-h-[38px] px-3 sm:px-4 py-1.5 rounded-full text-xs sm:text-sm font-bold transition-all duration-150 cursor-pointer whitespace-nowrap text-center focus-visible:outline-2 focus-visible:outline-rose-500 ${
                     statusFilter === tab.id
                       ? 'bg-white text-[#5c3419] shadow-sm'
                       : 'text-[#8c6245] hover:text-[#5c3419]'
@@ -114,7 +155,7 @@ export function AlbumView({
               <button
                 type="button"
                 onClick={() => setShowResetConfirm(true)}
-                className="min-h-[42px] px-3.5 py-2 rounded-full text-xs sm:text-sm font-bold text-[#8c6245] hover:text-rose-600 bg-[#fff7ef] border border-[#ebd5c1] hover:border-rose-200 transition-colors inline-flex items-center gap-1.5 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-rose-500"
+                className="hidden lg:inline-flex min-h-[44px] px-4 py-2 rounded-full text-sm font-bold text-[#8c6245] hover:text-rose-600 bg-[#fff7ef] border border-[#ebd5c1] hover:border-rose-200 transition-colors items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-rose-500"
                 title="Reiniciar colección"
               >
                 <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
@@ -125,8 +166,8 @@ export function AlbumView({
         </div>
 
         {/* Search + Species filter bar */}
-        <div className="mt-4 flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
-          <div className="relative w-full sm:w-64 shrink-0">
+        <div className="mt-4 pt-4 border-t border-[#f3e3d4] flex flex-col gap-3">
+          <div className="relative w-full sm:max-w-xs">
             <Search
               className="w-4 h-4 text-[#9c7149] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
               aria-hidden="true"
@@ -137,29 +178,29 @@ export function AlbumView({
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar especie o sabor..."
               aria-label="Buscar especie o sabor"
-              className="w-full min-h-[44px] pl-10 pr-9 py-2 rounded-full bg-[#fffaf4] border-2 border-[#ebd5c1] text-sm font-semibold text-[#5c3419] placeholder:text-[#a88263] focus:outline-none focus:border-rose-300"
+              className="w-full min-h-[44px] pl-10 pr-10 py-2 rounded-full bg-[#fffaf4] border-2 border-[#ebd5c1] text-sm font-semibold text-[#5c3419] placeholder:text-[#a88263] focus:outline-none focus:border-rose-300 transition-colors"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
                 aria-label="Limpiar búsqueda"
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full flex items-center justify-center text-[#8c6245] hover:bg-[#f3e3d3] cursor-pointer"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-[#8c6245] hover:bg-[#f3e3d3] cursor-pointer"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             )}
           </div>
 
           <div
-            className="flex items-center gap-2 overflow-x-auto md:flex-wrap no-scrollbar py-1"
+            className="flex items-center gap-2 overflow-x-auto md:flex-wrap no-scrollbar scroll-smooth-touch py-0.5 -mx-1 px-1"
             role="group"
             aria-label="Filtrar por especie"
           >
             <button
               type="button"
               onClick={() => setSpeciesFilter('all')}
-              className={`min-h-[44px] px-4 py-2 rounded-full text-xs sm:text-sm font-bold border-2 transition-all cursor-pointer whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-rose-500 ${
+              className={`min-h-[42px] px-4 py-2 rounded-full text-xs sm:text-sm font-bold border-2 transition-all duration-150 cursor-pointer whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-rose-500 ${
                 speciesFilter === 'all'
                   ? 'bg-[#7c4118] text-white border-[#7c4118] shadow-sm'
                   : 'bg-white text-[#7c4118] border-[#e7cbb2] hover:bg-[#fff4e6]'
@@ -173,7 +214,7 @@ export function AlbumView({
                 key={sp.id}
                 type="button"
                 onClick={() => setSpeciesFilter(sp.id)}
-                className={`min-h-[44px] px-3.5 py-2 rounded-full text-xs sm:text-sm font-bold border-2 transition-all cursor-pointer inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-rose-500 ${
+                className={`min-h-[42px] px-3.5 py-2 rounded-full text-xs sm:text-sm font-bold border-2 transition-all duration-150 cursor-pointer inline-flex items-center gap-1.5 whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-rose-500 ${
                   speciesFilter === sp.id
                     ? 'bg-[#7c4118] text-white border-[#7c4118] shadow-sm'
                     : 'bg-white text-[#7c4118] border-[#e7cbb2] hover:bg-[#fff4e6]'
@@ -189,11 +230,11 @@ export function AlbumView({
 
       {/* Species Groups */}
       {filteredGroups.length === 0 ? (
-        <div className="bg-white/85 border-2 border-[#f1dccb] rounded-[28px] p-8 sm:p-12 text-center">
+        <div className="bg-white/95 border-2 border-[#f1dccb] rounded-[28px] p-8 sm:p-12 text-center shadow-[0_10px_26px_rgba(120,53,15,0.05)]">
           <p className="font-display text-xl font-bold text-[#632d0c]">
             No hay stickers con ese filtro
           </p>
-          <p className="mt-1 text-sm font-semibold text-[#8c6245]">
+          <p className="mt-1.5 text-sm font-semibold text-[#8c6245] text-balance">
             Prueba limpiando la búsqueda o seleccionando otra categoría.
           </p>
           <button
@@ -203,13 +244,13 @@ export function AlbumView({
               setStatusFilter('all');
               setSearchQuery('');
             }}
-            className="mt-4 min-h-[44px] px-5 py-2.5 rounded-full font-display text-sm font-bold text-white bg-rose-500 hover:bg-rose-600 transition-colors cursor-pointer"
+            className="mt-4 min-h-[44px] px-6 py-2.5 rounded-full font-display text-sm font-bold text-white bg-rose-500 hover:bg-rose-600 transition-colors cursor-pointer whitespace-nowrap"
           >
             Mostrar todos
           </button>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5 sm:space-y-6">
           {filteredGroups.map(({ species, variants }) => {
             const unlockedInSpecies = species.variants.filter(
               (v) => (inventory[`${species.id}_${v.num.replace('#', '')}`] || 0) > 0
@@ -219,28 +260,31 @@ export function AlbumView({
             return (
               <section
                 key={species.id}
-                className="bg-white/88 backdrop-blur-sm border-2 border-[#f1dccb] rounded-[28px] p-4 sm:p-6 shadow-[0_10px_26px_rgba(120,53,15,0.06)]"
+                className="album-section-perf bg-white/95 border-2 border-[#f1dccb] rounded-[26px] sm:rounded-[28px] p-4 sm:p-6 shadow-[0_10px_26px_rgba(120,53,15,0.06)]"
               >
-                <div className="flex flex-wrap items-center justify-between gap-2 pb-3.5 mb-4 border-b border-dashed border-[#edd6c2]">
-                  <div className="flex items-center gap-2.5">
+                <div className="flex items-center justify-between gap-3 pb-3.5 mb-4 border-b border-dashed border-[#edd6c2]">
+                  <div className="flex items-center gap-2.5 min-w-0">
                     <span
-                      className={`w-10 h-10 rounded-2xl border flex items-center justify-center text-xl ${species.pastelBg} ${species.pastelAccent}`}
+                      className={`w-10 h-10 rounded-2xl border flex items-center justify-center text-xl shrink-0 ${species.pastelBg} ${species.pastelAccent}`}
                       aria-hidden="true"
                     >
                       {species.icon}
                     </span>
-                    <h2 className="font-display text-xl sm:text-2xl font-bold text-[#632d0c]">
+                    <h2 className="font-display text-lg sm:text-2xl font-bold text-[#632d0c] truncate">
                       {species.name}
                     </h2>
                   </div>
 
                   <span
-                    className={`text-xs sm:text-sm font-bold tabular-nums ${
+                    className={`inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold tabular-nums whitespace-nowrap shrink-0 ${
                       isComplete ? 'text-emerald-700' : 'text-[#8c6245]'
                     }`}
                   >
-                    {unlockedInSpecies} / {species.variants.length} coleccionados
-                    {isComplete ? ' · Completo' : ''}
+                    {isComplete && <CheckCircle2 className="w-4 h-4 shrink-0" aria-hidden="true" />}
+                    <span>
+                      {unlockedInSpecies} / {species.variants.length}
+                      {isComplete ? ' · Completo' : ' coleccionados'}
+                    </span>
                   </span>
                 </div>
 
@@ -256,31 +300,35 @@ export function AlbumView({
                         type="button"
                         onClick={() => onSelectSticker(species, variant, qty)}
                         disabled={!isUnlocked}
-                        className={`group relative rounded-[22px] border-2 p-3 sm:p-4 flex flex-col items-center text-center transition-all duration-200 focus-visible:outline-2 focus-visible:outline-rose-500 ${
+                        className={`min-w-0 w-full group relative rounded-[20px] sm:rounded-[22px] border-2 p-3 sm:p-4 flex flex-col items-center text-center transition-transform duration-150 focus-visible:outline-2 focus-visible:outline-rose-500 ${
                           isUnlocked
-                            ? `bg-white ${species.pastelAccent} hover:-translate-y-1 hover:shadow-[0_12px_24px_rgba(120,53,15,0.12)] cursor-pointer`
-                            : 'bg-[#fbf4ec] border-dashed border-[#e5ccb4] opacity-75 cursor-default'
+                            ? `bg-white ${species.pastelAccent} hover:-translate-y-1 hover:shadow-[0_12px_24px_rgba(120,53,15,0.12)] active:scale-[0.98] cursor-pointer`
+                            : 'bg-[#fbf4ec] border-dashed border-[#e5ccb4] opacity-80 cursor-default'
                         }`}
                       >
                         {qty > 1 && (
-                          <span className="absolute top-2.5 right-2.5 text-[11px] font-extrabold text-rose-600 tabular-nums">
+                          <span className="absolute top-2 right-2.5 z-10 text-xs font-extrabold text-rose-600 tabular-nums pointer-events-none">
                             x{qty}
                           </span>
                         )}
 
                         <div
-                          className={`w-24 h-24 sm:w-28 sm:h-28 rounded-2xl flex items-center justify-center p-2 relative ${
-                            isUnlocked ? species.pastelBg : 'bg-[#f4e8db]/70'
+                          className={`w-full aspect-square max-w-[112px] rounded-2xl flex items-center justify-center p-2 relative ${
+                            isUnlocked ? species.pastelBg : 'bg-[#f4e8db]/75'
                           }`}
                         >
                           <BakieImage
                             src={variant.path}
                             alt={isUnlocked ? `${species.name} ${variant.num}` : 'Sticker bloqueado'}
                             fallbackIcon={species.icon}
-                            imgClassName={`w-full h-full object-contain transition-transform duration-200 ${
+                            width={1080}
+                            height={1080}
+                            loading="lazy"
+                            decoding="async"
+                            imgClassName={`w-full h-full object-contain transition-transform duration-150 ${
                               isUnlocked
                                 ? 'drop-shadow-[0_6px_10px_rgba(92,52,25,0.14)] group-hover:scale-105'
-                                : 'brightness-0 opacity-20'
+                                : 'brightness-0 opacity-[0.14] pointer-events-none select-none'
                             }`}
                           />
                           {!isUnlocked && (
@@ -293,7 +341,7 @@ export function AlbumView({
                           )}
                         </div>
 
-                        <div className="mt-2.5 w-full">
+                        <div className="mt-2.5 w-full min-w-0">
                           <div className="font-display text-sm sm:text-base font-bold text-[#5c3419] truncate">
                             {isUnlocked ? species.name : 'Por descubrir'}
                           </div>
@@ -314,7 +362,7 @@ export function AlbumView({
       {/* In-app Reset Confirmation Dialog */}
       {showResetConfirm && (
         <div
-          className="fixed inset-0 z-[800] bg-[#4a2812]/55 backdrop-blur-sm flex items-center justify-center p-5"
+          className="fixed inset-0 z-[800] bg-[#4a2812]/55 backdrop-blur-sm flex items-center justify-center p-4 sm:p-5 overscroll-contain"
           role="dialog"
           aria-modal="true"
           aria-labelledby="reset-dialog-title"
@@ -322,18 +370,18 @@ export function AlbumView({
             if (e.target === e.currentTarget) setShowResetConfirm(false);
           }}
         >
-          <div className="w-full max-w-sm bg-[#fffdf9] border-3 border-[#8c5228] rounded-[28px] p-6 text-center shadow-2xl animate-pop-sticker">
+          <div className="w-full max-w-sm bg-[#fffdf9] border-3 border-[#8c5228] rounded-[28px] p-6 text-center shadow-2xl animate-pop-sticker max-h-[90dvh] overflow-y-auto scroll-smooth-touch">
             <h3 id="reset-dialog-title" className="font-display text-xl font-bold text-[#632d0c]">
               ¿Reiniciar tu álbum?
             </h3>
-            <p className="mt-2 text-sm font-semibold text-[#8c6245]">
+            <p className="mt-2 text-sm font-semibold text-[#8c6245] text-balance">
               Se borrarán todos los stickers conseguidos y el contador de sobres abiertos.
             </p>
             <div className="mt-5 flex items-center justify-center gap-3">
               <button
                 type="button"
                 onClick={() => setShowResetConfirm(false)}
-                className="min-h-[44px] flex-1 px-4 py-2.5 rounded-full font-display text-sm font-bold text-[#632d0c] bg-[#fdf2e6] border-2 border-[#e5c9b0] hover:bg-[#fbe8d3] cursor-pointer"
+                className="min-h-[44px] flex-1 px-4 py-2.5 rounded-full font-display text-sm font-bold text-[#632d0c] bg-[#fdf2e6] border-2 border-[#e5c9b0] hover:bg-[#fbe8d3] cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-rose-500"
               >
                 Cancelar
               </button>
@@ -343,7 +391,7 @@ export function AlbumView({
                   onResetProgress();
                   setShowResetConfirm(false);
                 }}
-                className="min-h-[44px] flex-1 px-4 py-2.5 rounded-full font-display text-sm font-bold text-white bg-rose-500 border-2 border-rose-700 hover:bg-rose-600 cursor-pointer"
+                className="min-h-[44px] flex-1 px-4 py-2.5 rounded-full font-display text-sm font-bold text-white bg-rose-500 border-2 border-rose-700 hover:bg-rose-600 cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-rose-700"
               >
                 Sí, reiniciar
               </button>

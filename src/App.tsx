@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { BookOpen, Gift, Package, Star, Volume2, VolumeX } from 'lucide-react';
 import {
   ALL_STICKERS_FLAT,
-  PACK_FRAMES,
   TOTAL_STICKERS,
   type BakieSpecies,
   type BakieVariant,
@@ -15,6 +14,7 @@ import { AlbumView } from './components/AlbumView';
 import { RewardModal, type PulledCard } from './components/RewardModal';
 import { StickerDetailModal } from './components/StickerDetailModal';
 import { BakieImage } from './components/BakieImage';
+import { useBodyScrollLock } from './hooks/useBodyScrollLock';
 import { playRevealChime, playSoftPop, playTearStep } from './utils/sound';
 
 type ActiveTab = 'store' | 'album';
@@ -61,6 +61,10 @@ export default function App() {
   const confettiRef = useRef<ConfettiHandle | null>(null);
   const packWrapperRef = useRef<HTMLDivElement | null>(null);
   const timersRef = useRef<number[]>([]);
+  const inventoryRef = useRef(userState.inventory);
+  inventoryRef.current = userState.inventory;
+
+  useBodyScrollLock(showSplash);
 
   const clearTimers = useCallback(() => {
     timersRef.current.forEach((id) => window.clearTimeout(id));
@@ -68,10 +72,6 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    PACK_FRAMES.forEach((src) => {
-      const img = new Image();
-      img.src = src;
-    });
     return () => clearTimers();
   }, [clearTimers]);
 
@@ -102,19 +102,25 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isRewardOpen, selectedSticker]);
 
-  const handleEnterApp = () => {
+  const handleEnterApp = useCallback(() => {
     playSoftPop(soundEnabled);
     setShowSplash(false);
     confettiRef.current?.burst(window.innerWidth / 2, window.innerHeight / 2, 40);
-  };
+  }, [soundEnabled]);
 
-  const handleSwitchTab = (tab: ActiveTab) => {
-    if (tab !== activeTab) {
-      playSoftPop(soundEnabled);
-      setActiveTab(tab);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
+  const handleSwitchTab = useCallback(
+    (tab: ActiveTab) => {
+      if (tab !== activeTab) {
+        playSoftPop(soundEnabled);
+        setActiveTab(tab);
+        window.scrollTo({
+          top: 0,
+          behavior: window.scrollY < 450 ? 'smooth' : 'instant',
+        });
+      }
+    },
+    [activeTab, soundEnabled]
+  );
 
   const revealPackRewards = useCallback(() => {
     const pulledItems: FlatSticker[] = [];
@@ -123,30 +129,28 @@ export default function App() {
       pulledItems.push(ALL_STICKERS_FLAT[randIdx]);
     }
 
-    setUserState((prev) => {
-      const nextInventory = { ...prev.inventory };
-      const nextCards: PulledCard[] = pulledItems.map((item) => {
-        const prevQty = nextInventory[item.uid] || 0;
-        const nextQty = prevQty + 1;
-        nextInventory[item.uid] = nextQty;
-        return {
-          item,
-          isNew: prevQty === 0,
-          totalOwned: nextQty,
-        };
-      });
-
-      const hasNew = nextCards.some((c) => c.isNew);
-      playRevealChime(soundEnabled, hasNew);
-      setRewardCards(nextCards);
-      setRecentPulls(pulledItems);
-      setIsRewardOpen(true);
-
+    const nextInventory = { ...inventoryRef.current };
+    const nextCards: PulledCard[] = pulledItems.map((item) => {
+      const prevQty = nextInventory[item.uid] || 0;
+      const nextQty = prevQty + 1;
+      nextInventory[item.uid] = nextQty;
       return {
-        inventory: nextInventory,
-        packsOpened: prev.packsOpened + 1,
+        item,
+        isNew: prevQty === 0,
+        totalOwned: nextQty,
       };
     });
+
+    const hasNew = nextCards.some((c) => c.isNew);
+    playRevealChime(soundEnabled, hasNew);
+
+    setUserState((prev) => ({
+      inventory: nextInventory,
+      packsOpened: prev.packsOpened + 1,
+    }));
+    setRewardCards(nextCards);
+    setRecentPulls(pulledItems);
+    setIsRewardOpen(true);
 
     confettiRef.current?.burst(window.innerWidth / 2, window.innerHeight / 2, 55);
   }, [soundEnabled]);
@@ -157,19 +161,20 @@ export default function App() {
     setFrameIndex(0);
     playTearStep(soundEnabled, 0);
 
-    const frameDuration = 240;
+    const frameDuration = 220;
+    const totalFrames = 6;
 
-    for (let step = 1; step < PACK_FRAMES.length; step++) {
+    for (let step = 1; step < totalFrames; step++) {
       const t = window.setTimeout(() => {
         setFrameIndex(step);
         playTearStep(soundEnabled, step);
 
         const rect = packWrapperRef.current?.getBoundingClientRect();
         if (rect) {
-          const tearRatio = step / (PACK_FRAMES.length - 1);
+          const tearRatio = step / (totalFrames - 1);
           const tearX = rect.right - rect.width * tearRatio * 0.85;
           const tearY = rect.top + 42;
-          confettiRef.current?.burst(tearX, tearY, 14 + step * 4);
+          confettiRef.current?.burst(tearX, tearY, 12 + step * 3);
         }
       }, step * frameDuration);
       timersRef.current.push(t);
@@ -180,50 +185,52 @@ export default function App() {
       const resetTimer = window.setTimeout(() => {
         setFrameIndex(0);
         setIsOpening(false);
-      }, 450);
+      }, 420);
       timersRef.current.push(resetTimer);
-    }, PACK_FRAMES.length * frameDuration + 180);
+    }, totalFrames * frameDuration + 160);
 
     timersRef.current.push(revealTimer);
   }, [isOpening, revealPackRewards, soundEnabled]);
 
-  const handleOpenAnother = () => {
+  const handleOpenAnother = useCallback(() => {
     setIsRewardOpen(false);
     const t = window.setTimeout(() => {
       startPackOpening();
     }, 120);
     timersRef.current.push(t);
-  };
+  }, [startPackOpening]);
 
-  const handleSelectAlbumSticker = (
-    species: BakieSpecies,
-    variant: BakieVariant,
-    qty: number
-  ) => {
-    if (qty <= 0) return;
-    const uid = `${species.id}_${variant.num.replace('#', '')}`;
-    const found = ALL_STICKERS_FLAT.find((s) => s.uid === uid);
-    if (found) {
+  const handleSelectAlbumSticker = useCallback(
+    (species: BakieSpecies, variant: BakieVariant, qty: number) => {
+      if (qty <= 0) return;
+      const uid = `${species.id}_${variant.num.replace('#', '')}`;
+      const found = ALL_STICKERS_FLAT.find((s) => s.uid === uid);
+      if (found) {
+        playSoftPop(soundEnabled);
+        setSelectedSticker(found);
+      }
+    },
+    [soundEnabled]
+  );
+
+  const handleCycleDetail = useCallback(
+    (direction: -1 | 1) => {
+      if (!selectedSticker || unlockedStickersList.length <= 1) return;
+      const idx = unlockedStickersList.findIndex((s) => s.uid === selectedSticker.uid);
+      if (idx === -1) return;
+      const nextIdx =
+        (idx + direction + unlockedStickersList.length) % unlockedStickersList.length;
       playSoftPop(soundEnabled);
-      setSelectedSticker(found);
-    }
-  };
+      setSelectedSticker(unlockedStickersList[nextIdx]);
+    },
+    [selectedSticker, soundEnabled, unlockedStickersList]
+  );
 
-  const handleCycleDetail = (direction: -1 | 1) => {
-    if (!selectedSticker || unlockedStickersList.length <= 1) return;
-    const idx = unlockedStickersList.findIndex((s) => s.uid === selectedSticker.uid);
-    if (idx === -1) return;
-    const nextIdx =
-      (idx + direction + unlockedStickersList.length) % unlockedStickersList.length;
-    playSoftPop(soundEnabled);
-    setSelectedSticker(unlockedStickersList[nextIdx]);
-  };
-
-  const handleResetProgress = () => {
+  const handleResetProgress = useCallback(() => {
     setUserState({ inventory: {}, packsOpened: 0 });
     setRecentPulls([]);
     setSelectedSticker(null);
-  };
+  }, []);
 
   return (
     <div className="min-h-dvh flex flex-col">
@@ -231,21 +238,25 @@ export default function App() {
 
       {showSplash && <SplashScreen onEnter={handleEnterApp} />}
 
-      {/* Compact Sticky Header (<= 56px on mobile) */}
-      <header className="sticky top-0 z-50 bg-white/88 backdrop-blur-md border-b-2 border-[#efdccc] shadow-[0_4px_16px_rgba(120,53,15,0.05)]">
-        <div className="max-w-6xl mx-auto h-13 sm:h-16 px-4 sm:px-6 flex items-center justify-between gap-4 sm:gap-8">
-          {/* Zone 1: Brand Wordmark/Logo */}
+      {/* Compact Sticky Header (<= 48px on mobile) */}
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b-2 border-[#efdccc] shadow-[0_4px_16px_rgba(120,53,15,0.05)]">
+        <div className="max-w-6xl mx-auto h-12 sm:h-16 px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-8">
+          {/* Zone 1: Brand Logo */}
           <button
             type="button"
             onClick={() => handleSwitchTab('store')}
             aria-label="Ir al inicio de BAKIES"
-            className="shrink-0 flex items-center cursor-pointer transition-transform hover:scale-105 focus-visible:outline-2 focus-visible:outline-rose-500 rounded-xl"
+            className="min-h-[44px] px-1 shrink-0 flex items-center cursor-pointer transition-transform duration-150 hover:scale-105 focus-visible:outline-2 focus-visible:outline-rose-500 rounded-xl"
           >
             <BakieImage
               src="/assets/logo/bakies_logo.png"
               alt="BAKIES"
               fallbackIcon="🧁"
-              imgClassName="h-8 sm:h-11 w-auto object-contain"
+              width={1280}
+              height={720}
+              loading="eager"
+              fetchPriority="high"
+              imgClassName="h-7 sm:h-11 w-auto aspect-[16/9] object-contain"
             />
           </button>
 
@@ -257,33 +268,33 @@ export default function App() {
             <button
               type="button"
               onClick={() => handleSwitchTab('store')}
-              className={`min-h-[38px] px-5 py-1.5 rounded-full font-display text-sm font-bold inline-flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-rose-500 ${
+              className={`min-h-[38px] px-5 py-1.5 rounded-full font-display text-sm font-bold inline-flex items-center gap-2 transition-all duration-150 cursor-pointer whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-rose-500 ${
                 activeTab === 'store'
                   ? 'bg-white text-[#5c3419] shadow-sm'
                   : 'text-[#8c6245] hover:text-[#5c3419]'
               }`}
             >
-              <Gift className="w-4 h-4 text-rose-500" aria-hidden="true" />
+              <Gift className="w-4 h-4 text-rose-500 shrink-0" aria-hidden="true" />
               <span>Abrir Sobres</span>
             </button>
             <button
               type="button"
               onClick={() => handleSwitchTab('album')}
-              className={`min-h-[38px] px-5 py-1.5 rounded-full font-display text-sm font-bold inline-flex items-center gap-2 transition-all cursor-pointer whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-rose-500 ${
+              className={`min-h-[38px] px-5 py-1.5 rounded-full font-display text-sm font-bold inline-flex items-center gap-2 transition-all duration-150 cursor-pointer whitespace-nowrap shrink-0 focus-visible:outline-2 focus-visible:outline-rose-500 ${
                 activeTab === 'album'
                   ? 'bg-white text-[#5c3419] shadow-sm'
                   : 'text-[#8c6245] hover:text-[#5c3419]'
               }`}
             >
-              <BookOpen className="w-4 h-4 text-amber-500" aria-hidden="true" />
+              <BookOpen className="w-4 h-4 text-amber-500 shrink-0" aria-hidden="true" />
               <span>Álbum de Stickers</span>
             </button>
           </nav>
 
           {/* Zone 3: Collection Counters & Sound Toggle */}
-          <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <div
-              className="flex items-center gap-3 text-xs sm:text-sm font-bold text-[#632d0c] tabular-nums"
+              className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm font-bold text-[#632d0c] tabular-nums"
               aria-label="Estadísticas de colección"
             >
               <span
@@ -312,7 +323,7 @@ export default function App() {
               onClick={() => setSoundEnabled((prev) => !prev)}
               aria-label={soundEnabled ? 'Silenciar efectos de sonido' : 'Activar efectos de sonido'}
               title={soundEnabled ? 'Sonido activado' : 'Sonido silenciado'}
-              className="w-10 h-10 rounded-full bg-[#fff6eb] border border-[#ebd5c1] text-[#7c4118] hover:bg-[#fde9d4] flex items-center justify-center transition-colors cursor-pointer shrink-0 focus-visible:outline-2 focus-visible:outline-rose-500"
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#fff6eb] border border-[#ebd5c1] text-[#7c4118] hover:bg-[#fde9d4] flex items-center justify-center transition-colors cursor-pointer shrink-0 focus-visible:outline-2 focus-visible:outline-rose-500"
             >
               {soundEnabled ? (
                 <Volume2 className="w-4 h-4" aria-hidden="true" />
@@ -325,7 +336,7 @@ export default function App() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 pt-5 sm:pt-8 pb-24 md:pb-10">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-3.5 sm:px-6 pt-4 sm:pt-8 pb-20 md:pb-10">
         {activeTab === 'store' ? (
           <PackOpener
             frameIndex={frameIndex}
@@ -352,21 +363,28 @@ export default function App() {
         )}
       </main>
 
-      {/* Mobile Bottom Tab Bar (Thumb Zone, compact <= 56px) */}
+      {/* Mobile Bottom Tab Bar (Thumb Zone, compact <= 52px) */}
       <nav
         aria-label="Navegación móvil"
-        className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white/92 backdrop-blur-md border-t-2 border-[#efdccc] shadow-[0_-6px_20px_rgba(120,53,15,0.07)] pb-safe"
+        className="md:hidden fixed bottom-0 inset-x-0 z-50 bg-white/94 backdrop-blur-md border-t-2 border-[#efdccc] shadow-[0_-6px_20px_rgba(120,53,15,0.07)] pb-safe"
       >
-        <div className="grid grid-cols-2 h-14 max-w-md mx-auto">
+        <div className="grid grid-cols-2 h-[52px] max-w-md mx-auto">
           <button
             type="button"
             onClick={() => handleSwitchTab('store')}
-            className={`flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-rose-500 ${
+            aria-current={activeTab === 'store' ? 'page' : undefined}
+            className={`relative flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-rose-500 ${
               activeTab === 'store' ? 'text-rose-600' : 'text-[#8c6245]'
             }`}
           >
-            <Gift className="w-5 h-5" aria-hidden="true" />
-            <span className="font-display text-xs font-bold whitespace-nowrap">
+            {activeTab === 'store' && (
+              <span
+                aria-hidden="true"
+                className="absolute top-0 w-10 h-0.5 rounded-full bg-rose-500"
+              />
+            )}
+            <Gift className="w-5 h-5 shrink-0" aria-hidden="true" />
+            <span className="font-display text-[11px] font-bold whitespace-nowrap leading-none">
               Abrir Sobres
             </span>
           </button>
@@ -374,13 +392,20 @@ export default function App() {
           <button
             type="button"
             onClick={() => handleSwitchTab('album')}
-            className={`flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-rose-500 ${
+            aria-current={activeTab === 'album' ? 'page' : undefined}
+            className={`relative flex flex-col items-center justify-center gap-0.5 transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-rose-500 ${
               activeTab === 'album' ? 'text-[#632d0c]' : 'text-[#8c6245]'
             }`}
           >
-            <BookOpen className="w-5 h-5" aria-hidden="true" />
-            <span className="font-display text-xs font-bold whitespace-nowrap tabular-nums">
-              Álbum ({uniqueCollected}/{TOTAL_STICKERS})
+            {activeTab === 'album' && (
+              <span
+                aria-hidden="true"
+                className="absolute top-0 w-10 h-0.5 rounded-full bg-[#7c4118]"
+              />
+            )}
+            <BookOpen className="w-5 h-5 shrink-0" aria-hidden="true" />
+            <span className="font-display text-[11px] font-bold whitespace-nowrap tabular-nums leading-none">
+              Álbum · {uniqueCollected}/{TOTAL_STICKERS}
             </span>
           </button>
         </div>

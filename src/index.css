@@ -19,20 +19,31 @@
     font-family: var(--font-sans);
     color: var(--cocoa-ink);
     background-color: var(--cream-canvas);
-    scroll-behavior: smooth;
+    overscroll-behavior-y: none;
     -webkit-tap-highlight-color: transparent;
   }
 
   body {
     min-height: 100dvh;
-    overflow-x: hidden;
+    overflow-x: clip;
+    background-color: #fffbf5;
+    color: var(--cocoa-ink);
+    position: relative;
+  }
+
+  /* GPU-composited fixed dot-grid + pastel backdrop (avoids slow background-attachment: fixed repaints) */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
     background-color: #fffbf5;
     background-image:
       radial-gradient(#f0dccb 1.5px, transparent 1.5px),
       linear-gradient(145deg, #fff5f7 0%, #fffbf2 35%, #fefce8 65%, #f2fbf6 100%);
     background-size: 26px 26px, 100% 100%;
-    background-attachment: fixed;
-    color: var(--cocoa-ink);
+    transform: translateZ(0);
   }
 
   h1, h2, h3, h4, .font-display {
@@ -44,75 +55,84 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Cute candy stripe animation for loading bar */
-@keyframes candyStripes {
+/* Compositor-only candy stripe animation (transform instead of background-position) */
+@keyframes candyStripesSlide {
   0% {
-    background-position: 0 0;
+    transform: translate3d(-25.45px, 0, 0);
   }
   100% {
-    background-position: 36px 0;
+    transform: translate3d(0, 0, 0);
   }
 }
 
 .candy-stripes::after {
   content: '';
   position: absolute;
-  inset: 0;
-  background-image: linear-gradient(
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: -36px;
+  background-image: repeating-linear-gradient(
     45deg,
-    rgba(255, 255, 255, 0.35) 25%,
-    transparent 25%,
-    transparent 50%,
-    rgba(255, 255, 255, 0.35) 50%,
-    rgba(255, 255, 255, 0.35) 75%,
-    transparent 75%
+    rgba(255, 255, 255, 0.34) 0px,
+    rgba(255, 255, 255, 0.34) 9px,
+    transparent 9px,
+    transparent 18px
   );
-  background-size: 18px 18px;
-  animation: candyStripes 1.1s linear infinite;
+  will-change: transform;
+  animation: candyStripesSlide 0.85s linear infinite;
 }
 
 @keyframes floatGentle {
   0%, 100% {
-    transform: translateY(0px) rotate(-1deg);
+    transform: translate3d(0, 0, 0) rotate(-0.8deg);
   }
   50% {
-    transform: translateY(-10px) rotate(1.2deg);
+    transform: translate3d(0, -8px, 0) rotate(1deg);
   }
 }
 
 .animate-float-gentle {
+  will-change: transform;
   animation: floatGentle 3.6s ease-in-out infinite;
 }
 
 @keyframes packWobble {
   0%, 100% {
-    transform: translateY(0) rotate(0deg) scale(1);
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
   }
   25% {
-    transform: translateY(-4px) rotate(-2deg) scale(1.02);
+    transform: translate3d(0, -4px, 0) rotate(-2deg) scale(1.02);
   }
   75% {
-    transform: translateY(-4px) rotate(2deg) scale(1.02);
+    transform: translate3d(0, -4px, 0) rotate(2deg) scale(1.02);
   }
 }
 
 .animate-pack-wobble {
+  will-change: transform;
   animation: packWobble 0.28s ease-in-out infinite;
 }
 
 @keyframes popSticker {
   0% {
     opacity: 0;
-    transform: scale(0.72) translateY(14px);
+    transform: translate3d(0, 12px, 0) scale(0.92);
   }
   100% {
     opacity: 1;
-    transform: scale(1) translateY(0);
+    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
 .animate-pop-sticker {
-  animation: popSticker 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: popSticker 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Smooth momentum touch scrolling inside modals & horizontal bars */
+.scroll-smooth-touch {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 /* Hide horizontal scrollbar on mobile filter chips while preserving touch scroll */
@@ -126,7 +146,13 @@
 
 /* Safe area padding for mobile bottom nav */
 .pb-safe {
-  padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+  padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
+}
+
+/* Performance containment for album sections */
+.album-section-perf {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 240px;
 }
 
 @media (prefers-reduced-motion: reduce) {

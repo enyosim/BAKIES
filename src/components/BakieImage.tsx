@@ -6,6 +6,12 @@ interface BakieImageProps {
   fallbackIcon?: string;
   className?: string;
   imgClassName?: string;
+  loading?: 'eager' | 'lazy';
+  decoding?: 'sync' | 'async' | 'auto';
+  fetchPriority?: 'high' | 'low' | 'auto';
+  width?: number;
+  height?: number;
+  onLoad?: () => void;
 }
 
 export function BakieImage({
@@ -14,6 +20,12 @@ export function BakieImage({
   fallbackIcon = '🧁',
   className = '',
   imgClassName = '',
+  loading = 'eager',
+  decoding = 'async',
+  fetchPriority,
+  width,
+  height,
+  onLoad,
 }: BakieImageProps) {
   const [hasError, setHasError] = useState(false);
 
@@ -35,7 +47,13 @@ export function BakieImage({
     <img
       src={src}
       alt={alt}
+      width={width}
+      height={height}
+      loading={loading}
+      decoding={decoding}
+      fetchPriority={fetchPriority}
       referrerPolicy="no-referrer"
+      onLoad={onLoad}
       onError={() => setHasError(true)}
       className={`${imgClassName} ${className}`.trim()}
       draggable={false}

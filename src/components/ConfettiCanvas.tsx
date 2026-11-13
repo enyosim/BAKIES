@@ -1,4 +1,4 @@
-import { useEffect, useImperativeHandle, useRef, forwardRef } from 'react';
+import { useCallback, useEffect, useImperativeHandle, useRef, forwardRef } from 'react';
 
 interface Particle {
   x: number;
@@ -27,63 +27,51 @@ const PASTEL_COLORS = [
   '#fdba74', // peach
 ];
 
+const MAX_PARTICLES = 150;
+
 export const ConfettiCanvas = forwardRef<ConfettiHandle>(function ConfettiCanvas(_, ref) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const particlesRef = useRef<Particle[]>([]);
   const rafRef = useRef<number | null>(null);
+  const sizeRef = useRef({ width: 0, height: 0, dpr: 1 });
 
-  useImperativeHandle(ref, () => ({
-    burst(originX: number, originY: number, count = 36) {
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const startLoop = useCallback(() => {
+    if (rafRef.current !== null) return;
 
-      for (let i = 0; i < count; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 7.5 + 2.5;
-        particlesRef.current.push({
-          x: originX,
-          y: originY,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed - 2.5,
-          size: Math.random() * 8 + 5,
-          color: PASTEL_COLORS[Math.floor(Math.random() * PASTEL_COLORS.length)],
-          rotation: Math.random() * 360,
-          vRot: (Math.random() - 0.5) * 9,
-          opacity: 1,
-          decay: Math.random() * 0.018 + 0.012,
-          isCircle: Math.random() > 0.55,
-        });
-      }
-    },
-  }));
-
-  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener('resize', resize);
+    let lastTime = performance.now();
 
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const animate = (now: number) => {
+      const dt = Math.min((now - lastTime) / 16.6667, 2.5);
+      lastTime = now;
+
+      const { width, height } = sizeRef.current;
+      ctx.clearRect(0, 0, width, height);
+
       const list = particlesRef.current;
-
-      for (let i = list.length - 1; i >= 0; i--) {
+      let i = list.length - 1;
+      while (i >= 0) {
         const p = list[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.22;
-        p.vx *= 0.99;
-        p.rotation += p.vRot;
-        p.opacity -= p.decay;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += 0.22 * dt;
+        const drag = Math.pow(0.99, dt);
+        p.vx *= drag;
+        p.rotation += p.vRot * dt;
+        p.opacity -= p.decay * dt;
 
         if (p.opacity <= 0) {
-          list.splice(i, 1);
+          // O(1) swap-and-pop removal
+          const last = list.length - 1;
+          if (i !== last) {
+            list[i] = list[last];
+          }
+          list.pop();
+          i--;
           continue;
         }
 
@@ -98,7 +86,6 @@ export const ConfettiCanvas = forwardRef<ConfettiHandle>(function ConfettiCanvas
           ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
           ctx.fill();
         } else {
-          // Cute rounded sprinkle pill shape
           const w = p.size * 1.15;
           const h = p.size * 0.55;
           const r = h / 2;
@@ -107,16 +94,83 @@ export const ConfettiCanvas = forwardRef<ConfettiHandle>(function ConfettiCanvas
           ctx.fill();
         }
         ctx.restore();
+        i--;
       }
 
-      rafRef.current = requestAnimationFrame(animate);
+      if (list.length > 0) {
+        rafRef.current = requestAnimationFrame(animate);
+      } else {
+        ctx.clearRect(0, 0, width, height);
+        rafRef.current = null;
+      }
     };
 
     rafRef.current = requestAnimationFrame(animate);
+  }, []);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      burst(originX: number, originY: number, count = 36) {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        const list = particlesRef.current;
+        const available = Math.max(0, MAX_PARTICLES - list.length);
+        const spawnCount = Math.min(count, available || Math.min(count, 24));
+
+        for (let i = 0; i < spawnCount; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = Math.random() * 7.5 + 2.5;
+          list.push({
+            x: originX,
+            y: originY,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 2.5,
+            size: Math.random() * 8 + 5,
+            color: PASTEL_COLORS[Math.floor(Math.random() * PASTEL_COLORS.length)],
+            rotation: Math.random() * 360,
+            vRot: (Math.random() - 0.5) * 9,
+            opacity: 1,
+            decay: Math.random() * 0.018 + 0.012,
+            isCircle: Math.random() > 0.55,
+          });
+        }
+
+        if (list.length > 0) {
+          startLoop();
+        }
+      },
+    }),
+    [startLoop]
+  );
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const resize = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      sizeRef.current = { width, height, dpr };
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+
+    resize();
+    window.addEventListener('resize', resize, { passive: true });
 
     return () => {
       window.removeEventListener('resize', resize);
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      if (rafRef.current !== null) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
     };
   }, []);
 
