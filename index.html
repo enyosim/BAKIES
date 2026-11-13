@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BAKIES - Colección Oficial</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #fef2f2 0%, #fff7ed 25%, #fefce8 50%, #f0fdf4 75%, #f0f9ff 100%);
+      --text-main: #4a2c11;
+      --text-muted: #8c6a4a;
+      --accent-pink: #f43f5e;
+      --accent-gold: #f59e0b;
+      --accent-blue: #0284c7;
+      --accent-cream: #fffbeb;
+      --card-bg: rgba(255, 255, 255, 0.88);
+      --card-border: #f1dfcf;
+      --shadow-soft: 0 10px 25px -5px rgba(120, 53, 15, 0.08), 0 8px 10px -6px rgba(120, 53, 15, 0.04);
+      --shadow-hover: 0 20px 30px -10px rgba(120, 53, 15, 0.18);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    body {
+      font-family: 'Fredoka', 'Quicksand', sans-serif;
+      color: var(--text-main);
+      background-color: #faf5ef;
+      background-image: 
+        radial-gradient(#e6cfb8 1.5px, transparent 1.5px),
+        var(--bg-gradient);
+      background-size: 24px 24px, 100% 100%;
+      background-attachment: fixed;
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* PANTALLA DE CARGA (SPLASH SCREEN - 15s) */
+    #splash-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background-color: #fff9f2;
+      background-image: 
+        radial-gradient(#ebd3be 2px, transparent 2px),
+        linear-gradient(135deg, #fff1f2 0%, #fef3c7 50%, #e0f2fe 100%);
+      background-size: 28px 28px, 100% 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
+      padding: 20px;
+    }
+
+    #splash-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .splash-logo-container {
+      width: min(90vw, 480px);
+      margin-bottom: 30px;
+      animation: floatSmooth 3.5s ease-in-out infinite alternate;
+      filter: drop-shadow(0 15px 25px rgba(92, 45, 14, 0.2));
+    }
+
+    .splash-logo-container img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    @keyframes floatSmooth {
+      0% {
+        transform: translateY(0px) rotate(-1deg);
+      }
+      100% {
+        transform: translateY(-18px) rotate(1.5deg);
+      }
+    }
+
+    .progress-box {
+      width: min(85vw, 360px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .progress-bar-track {
+      width: 100%;
+      height: 22px;
+      background: #fae8d4;
+      border: 3px solid #7c4118;
+      border-radius: 999px;
+      padding: 3px;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.1), 0 4px 10px rgba(124, 65, 24, 0.15);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #f43f5e, #fb923c, #fbbf24);
+      border-radius: 999px;
+      transition: width 0.1s linear;
+      position: relative;
+      box-shadow: inset 0 2px 0 rgba(255,255,255,0.4);
+    }
+
+    .progress-bar-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(
+        45deg,
+        rgba(255,255,255,0.25) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255,255,255,0.25) 50%,
+        rgba(255,255,255,0.25) 75%,
+        transparent 75%
+      );
+      background-size: 20px 20px;
+      animation: candyStripes 1.2s linear infinite;
+    }
+
+    @keyframes candyStripes {
+      0% { background-position: 0 0; }
+      100% { background-position: 40px 0; }
+    }
+
+    .splash-message {
+      font-size: 15px;
+      font-weight: 600;
+      color: #7c4118;
+      min-height: 26px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: opacity 0.3s;
+    }
+
+    .btn-enter {
+      margin-top: 15px;
+      background: linear-gradient(145deg, #10b981, #059669);
+      color: white;
+      border: 3px solid #064e3b;
+      padding: 14px 40px;
+      border-radius: 999px;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(5, 150, 105, 0.4), inset 0 2px 0 rgba(255,255,255,0.4);
+      transform: scale(0.9);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .btn-enter.ready {
+      transform: scale(1);
+      opacity: 1;
+      pointer-events: auto;
+      animation: pulseAttention 2s infinite ease-in-out;
+    }
+
+    .btn-enter:hover {
+      transform: scale(1.05) translateY(-2px);
+      box-shadow: 0 12px 25px rgba(5, 150, 105, 0.5);
+    }
+
+    @keyframes pulseAttention {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+
+    /* HEADER */
+    header {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(10px);
+      border-bottom: 2px solid #ecd3be;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 15px rgba(120, 53, 15, 0.05);
+    }
+
+    .header-logo {
+      height: 48px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .header-logo:hover {
+      transform: scale(1.04) rotate(-1deg);
+    }
+    .header-logo img {
+      height: 100%;
+      width: auto;
+    }
+
+    .nav-tabs {
+      display: flex;
+      background: #f5ebe1;
+      border: 2px solid #e2cbba;
+      border-radius: 999px;
+      padding: 4px;
+      gap: 6px;
+    }
+
+    .nav-btn {
+      background: transparent;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-btn.active {
+      background: white;
+      color: var(--text-main);
+      box-shadow: 0 2px 8px rgba(124, 65, 24, 0.15);
+    }
+
+    .header-stats {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .counter-pill {
+      background: #fff;
+      border: 2px solid #ecd3be;
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+    }
+
+    .counter-pill .badge-icon {
+      font-size: 16px;
+    }
+
+    /* CONTENEDOR PRINCIPAL */
+    main {
+      flex: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 24px 20px;
+    }
+
+    .view-section {
+      display: none;
+      animation: fadeIn 0.3s ease-out;
+    }
+
+    .view-section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* TIENDA / ABRIR SOBRES */
+    .gacha-hero {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .gacha-hero h1 {
+      font-size: 32px;
+      font-weight: 800;
+      color: #632d0c;
+      margin-bottom: 6px;
+    }
+
+    .gacha-hero p {
+      color: var(--text-muted);
+      font-size: 16px;
+    }
+
+    .pack-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 20px 0;
+    }
+
+    .pack-wrapper {
+      position: relative;
+      width: 290px;
+      height: 400px;
+      cursor: pointer;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .pack-wrapper:hover:not(.opening) {
+      transform: translateY(-10px) scale(1.02);
+    }
+
+    .pack-wrapper img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 15px 25px rgba(120, 53, 15, 0.25));
+    }
+
+    .open-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .btn-open-pack {
+      background: linear-gradient(145deg, #f43f5e, #e11d48);
+      color: white;
+      border: 3px solid #9f1239;
+      font-size: 20px;
+      font-weight: 800;
+      padding: 14px 44px;
+      border-radius: 999px;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(225, 29, 72, 0.35), inset 0 2px 0 rgba(255,255,255,0.4);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s;
+    }
+
+    .btn-open-pack:hover:not(:disabled) {
+      transform: scale(1.05) translateY(-2px);
+      box-shadow: 0 12px 30px rgba(225, 29, 72, 0.45);
+    }
+
+    .btn-open-pack:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* SECCIÓN ÁLBUM */
+    .album-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .album-filter {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      max-width: 100%;
+    }
+
+    .filter-chip {
+      background: white;
+      border: 2px solid #e2cbba;
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+
+    .filter-chip.active, .filter-chip:hover {
+      background: #7c4118;
+      color: white;
+      border-color: #7c4118;
+    }
+
+    .creatures-group-container {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+
+    .creature-card-group {
+      background: var(--card-bg);
+      border: 2px solid var(--card-border);
+      border-radius: 24px;
+      padding: 20px;
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(5px);
+    }
+
+    .group-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #632d0c;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px dashed #f0dfd1;
+      padding-bottom: 8px;
+    }
+
+    .group-progress {
+      font-size: 14px;
+      font-weight: 700;
+      color: #8c6a4a;
+      background: #fdf5ec;
+      padding: 4px 12px;
+      border-radius: 999px;
+    }
+
+    .stickers-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 16px;
+    }
+
+    .sticker-item {
+      background: white;
+      border: 2px solid #eedecf;
+      border-radius: 18px;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s;
+      cursor: pointer;
+    }
+
+    .sticker-item:hover {
+      transform: translateY(-6px) scale(1.03);
+      box-shadow: var(--shadow-hover);
+      border-color: #f59e0b;
+    }
+
+    .sticker-img-box {
+      width: 100px;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+      position: relative;
+    }
+
+    .sticker-img-box img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
+      transition: filter 0.3s;
+    }
+
+    /* Sticker Bloqueado */
+    .sticker-item.locked {
+      background: #f8f1ea;
+      opacity: 0.6;
+      border-style: dashed;
+    }
+
+    .sticker-item.locked .sticker-img-box img {
+      filter: brightness(0) invert(0.3) opacity(0.2);
+    }
+
+    .lock-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      color: #b08968;
+    }
+
+    .sticker-name {
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+      color: var(--text-main);
+      margin-bottom: 2px;
+      text-transform: capitalize;
+    }
+
+    .sticker-number {
+      font-size: 11px;
+      font-weight: 700;
+      color: #9c7149;
+      background: #fdf2e9;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .sticker-qty-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #f43f5e;
+      color: white;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 999px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+
+    /* MODAL DE RECOMPENSA DE SOBRE */
+    .modal-gacha-reward {
+      position: fixed;
+      inset: 0;
+      background: rgba(45, 21, 5, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.35s ease-out;
+      padding: 20px;
+    }
+
+    .modal-gacha-reward.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .reward-box {
+      background: #fffdf9;
+      border: 4px solid #7c4118;
+      border-radius: 28px;
+      padding: 28px;
+      max-width: 480px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+      transform: scale(0.85);
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .modal-gacha-reward.active .reward-box {
+      transform: scale(1);
+    }
+
+    .reward-title {
+      font-size: 26px;
+      font-weight: 800;
+      color: #7c4118;
+      margin-bottom: 6px;
+    }
+
+    .reward-cards-container {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+
+    .reward-card-pop {
+      width: 130px;
+      height: 165px;
+      background: white;
+      border: 3px solid #f59e0b;
+      border-radius: 20px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+      animation: popSticker 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    @keyframes popSticker {
+      0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    .reward-card-pop img {
+      max-width: 90px;
+      max-height: 90px;
+      object-fit: contain;
+      filter: drop-shadow(0 6px 12px rgba(0,0,0,0.15));
+    }
+
+    .reward-badge-new {
+      background: #f43f5e;
+      color: white;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 999px;
+      margin-top: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-collect-all {
+      background: linear-gradient(145deg, #10b981, #059669);
+      color: white;
+      border: 3px solid #064e3b;
+      padding: 12px 36px;
+      border-radius: 999px;
+      font-size: 18px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(5, 150, 105, 0.4);
+      transition: transform 0.2s;
+    }
+    .btn-collect-all:hover {
+      transform: scale(1.05);
+    }
+
+    /* MODAL DE DETALLE DE STICKER */
+    .modal-detail-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(5px);
+      z-index: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s;
+      padding: 20px;
+    }
+
+    .modal-detail-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .detail-card {
+      background: #fff;
+      border: 3px solid #7c4118;
+      border-radius: 28px;
+      padding: 24px;
+      max-width: 360px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      position: relative;
+    }
+
+    .detail-card-img {
+      width: 180px;
+      height: 180px;
+      margin: 0 auto 16px;
+    }
+    .detail-card-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 10px 20px rgba(0,0,0,0.15));
+    }
+
+    .close-modal-btn {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: #fae8d4;
+      border: 2px solid #7c4118;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #7c4118;
+    }
+
+    /* CANVAS DE CONFETI GLOBAL */
+    #confetti-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 999;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CANVAS CONFETI -->
+  <canvas id="confetti-canvas"></canvas>
+
+  <!-- PANTALLA DE CARGA (SPLASH SCREEN 15s) -->
+  <div id="splash-screen">
+    <div class="splash-logo-container">
+      <img src="public/assets/logo/bakies_logo.png" alt="BAKIES Logo">
+    </div>
+
+    <div class="progress-box">
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="splash-progress"></div>
+      </div>
+      <div class="splash-message" id="splash-msg">
+        <span>🍓</span> <span>Batiendo la crema fresca...</span>
+      </div>
+      <button class="btn-enter" id="btn-enter-app" onclick="enterApp()">
+        ¡ENTRAR A LA PASTELERÍA! 🧁
+      </button>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-logo" onclick="switchTab('store')">
+      <img src="public/assets/logo/bakies_logo.png" alt="BAKIES">
+    </div>
+
+    <div class="nav-tabs">
+      <button class="nav-btn active" id="tab-btn-store" onclick="switchTab('store')">
+        🎁 Abrir Sobres
+      </button>
+      <button class="nav-btn" id="tab-btn-album" onclick="switchTab('album')">
+        📖 Álbum de Stickers
+      </button>
+    </div>
+
+    <div class="header-stats">
+      <div class="counter-pill" title="Stickers únicos conseguidos">
+        <span class="badge-icon">⭐</span>
+        <span id="stat-collected">0 / 28</span>
+      </div>
+      <div class="counter-pill" title="Sobres abiertos">
+        <span class="badge-icon">📦</span>
+        <span id="stat-opened">0</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main>
+
+    <!-- VISTA 1: TIENDA DE SOBRES (GACHA) -->
+    <section class="view-section active" id="view-store">
+      <div class="gacha-hero">
+        <h1>¡Abre tus Sobres de Bakies!</h1>
+        <p>Rasga el sobre oficial Serie 1 para descubrir qué criaturas dulces te tocan.</p>
+      </div>
+
+      <div class="pack-stage">
+        <div class="pack-wrapper" id="pack-wrapper" onclick="startPackOpening()">
+          <img id="pack-img" src="public/assets/sobres/frame00.png" alt="Sobre BAKIES">
+        </div>
+
+        <div class="open-controls">
+          <button class="btn-open-pack" id="btn-open" onclick="startPackOpening()">
+            <span>✨</span> ABRIR SOBRE
+          </button>
+          <span style="font-size: 13px; color: var(--text-muted); font-weight: 600;">
+            Toca el sobre o el botón para abrir
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- VISTA 2: ÁLBUM DE COLECCIÓN -->
+    <section class="view-section" id="view-album">
+      <div class="album-header">
+        <div>
+          <h2 style="font-size: 26px; color: #632d0c; font-weight: 800;">Tu Álbum de Bakies 📖</h2>
+          <p style="color: var(--text-muted); font-size: 14px;">Colecciona todas las especies de criaturas y sus variantes numeradas.</p>
+        </div>
+        <div class="album-filter" id="species-filter-container">
+          <!-- Filtros dinámicos -->
+        </div>
+      </div>
+
+      <div class="creatures-group-container" id="album-groups-container">
+        <!-- Grupos de álbum generados dinámicamente -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL DE RECOMPENSA DE SOBRE -->
+  <div class="modal-gacha-reward" id="modal-reward">
+    <div class="reward-box">
+      <h3 class="reward-title">¡HAS CONSEGUIDO BAKIES! 🌟</h3>
+      <p style="color: var(--text-muted); font-size: 14px;">¡Nuevos stickers añadidos a tu colección de repostería!</p>
+      
+      <div class="reward-cards-container" id="reward-cards-list">
+        <!-- Tarjetas reveladas -->
+      </div>
+
+      <button class="btn-collect-all" onclick="closeRewardModal()">
+        ¡Guardar en el Álbum! 📖
+      </button>
+    </div>
+  </div>
+
+  <!-- MODAL DETALLE DE STICKER -->
+  <div class="modal-detail-overlay" id="modal-detail" onclick="closeDetailModal(event)">
+    <div class="detail-card">
+      <button class="close-modal-btn" onclick="closeDetailModal()">✕</button>
+      <div class="detail-card-img">
+        <img id="detail-img" src="" alt="">
+      </div>
+      <h3 id="detail-name" style="font-size: 22px; color: #7c4118; margin-bottom: 4px; text-transform: capitalize;"></h3>
+      <div id="detail-number" class="sticker-number" style="display: inline-block; margin-bottom: 12px;"></div>
+      <p id="detail-desc" style="font-size: 14px; color: var(--text-muted); line-height: 1.4;"></p>
+      <div id="detail-count" style="margin-top: 14px; font-size: 13px; font-weight: 700; color: #059669;"></div>
+    </div>
+  </div>
+
+  <script>
+    /* =====================================================================
+       1. CATÁLOGO DE BAKIES CON TUS NOMBRES OFICIALES & RUTAS CARPETIZADAS
+       Ruta: public/assets/bakies/{creature}/{creature}_{num}.png
+       ===================================================================== */
+    const BAKIES_DATABASE = [
+      {
+        id: "puppcake",
+        name: "Puppcake",
+        icon: "🧁",
+        variants: [
+          { num: "#001", file: "puppcake_001.png", path: "public/assets/bakies/puppcake/puppcake_001.png", flavor: "Fresa & Crema Batida Clásica" },
+          { num: "#002", file: "puppcake_002.png", path: "public/assets/bakies/puppcake/puppcake_002.png", flavor: "Vainilla & Chispas de Colores" }
+        ]
+      },
+      {
+        id: "cinnashell",
+        name: "Cinnashell",
+        icon: "🐌",
+        variants: [
+          { num: "#001", file: "cinnashell_001.png", path: "public/assets/bakies/cinnashell/cinnashell_001.png", flavor: "Canela Clásica & Glaseado de Vainilla" },
+          { num: "#002", file: "cinnashell_002.png", path: "public/assets/bakies/cinnashell/cinnashell_002.png", flavor: "Toffee & Azúcar Moreno Horneado" }
+        ]
+      },
+      {
+        id: "donubear",
+        name: "Donubear",
+        icon: "🐻",
+        variants: [
+          { num: "#001", file: "donubear_001.png", path: "public/assets/bakies/donubear/donubear_001.png", flavor: "Glaseado Rosa de Fresa & Chispas" },
+          { num: "#002", file: "donubear_002.png", path: "public/assets/bakies/donubear/donubear_002.png", flavor: "Chocolate Fudge & Lluvia de Azúcar" },
+          { num: "#003", file: "donubear_003.png", path: "public/assets/bakies/donubear/donubear_003.png", flavor: "Azúcar Glacial Ártico" },
+          { num: "#004", file: "donubear_004.png", path: "public/assets/bakies/donubear/donubear_004.png", flavor: "Cacao Nocturno & Confeti" }
+        ]
+      },
+      {
+        id: "cataroon",
+        name: "Cataroon",
+        icon: "🐱",
+        variants: [
+          { num: "#001", file: "cataroon_001.png", path: "public/assets/bakies/cataroon/cataroon_001.png", flavor: "Frambuesa & Ganache de Vainilla" },
+          { num: "#002", file: "cataroon_002.png", path: "public/assets/bakies/cataroon/cataroon_002.png", flavor: "Pistacho Suave & Crema Blanca" }
+        ]
+      },
+      {
+        id: "tartle",
+        name: "Tartle",
+        icon: "🐢",
+        variants: [
+          { num: "#001", file: "tartle_001.png", path: "public/assets/bakies/tartle/tartle_001.png", flavor: "Higos Negros & Crema Mascarpone" },
+          { num: "#002", file: "tartle_002.png", path: "public/assets/bakies/tartle/tartle_002.png", flavor: "Frutas del Bosque & Masa Quebrada" }
+        ]
+      },
+      {
+        id: "croisfox",
+        name: "Croisfox",
+        icon: "🦊",
+        variants: [
+          { num: "#001", file: "croisfox_001.png", path: "public/assets/bakies/croisfox/croisfox_001.png", flavor: "Mantequilla Dorada & Almendras Tostadas" },
+          { num: "#002", file: "croisfox_002.png", path: "public/assets/bakies/croisfox/croisfox_002.png", flavor: "Hojaldre Nevado & Azúcar Glass" }
+        ]
+      },
+      {
+        id: "candylamb",
+        name: "Candylamb",
+        icon: "🐑",
+        variants: [
+          { num: "#001", file: "candylamb_001.png", path: "public/assets/bakies/candylamb/candylamb_001.png", flavor: "Algodón de Azúcar Menta & Limón" },
+          { num: "#002", file: "candylamb_002.png", path: "public/assets/bakies/candylamb/candylamb_002.png", flavor: "Fantasía Arcoíris & Chispas Neón" }
+        ]
+      },
+      {
+        id: "truffico",
+        name: "Truffico",
+        icon: "🦔",
+        variants: [
+          { num: "#001", file: "truffico_001.png", path: "public/assets/bakies/truffico/truffico_001.png", flavor: "Trufa Blanca & Frambuesa Crujiente" },
+          { num: "#002", file: "truffico_002.png", path: "public/assets/bakies/truffico/truffico_002.png", flavor: "Chocolate Intenso & Virutas de Cacao" }
+        ]
+      },
+      {
+        id: "popsipeng",
+        name: "Popsipeng",
+        icon: "🐧",
+        variants: [
+          { num: "#001", file: "popsipeng_001.png", path: "public/assets/bakies/popsipeng/popsipeng_001.png", flavor: "Sandía Tropical & Pepitas Dulces" },
+          { num: "#002", file: "popsipeng_002.png", path: "public/assets/bakies/popsipeng/popsipeng_002.png", flavor: "Creamsicle de Naranja & Nata Batida" }
+        ]
+      },
+      {
+        id: "mochibun",
+        name: "Mochibun",
+        icon: "🐇",
+        variants: [
+          { num: "#001", file: "mochibun_001.png", path: "public/assets/bakies/mochibun/mochibun_001.png", flavor: "Mango Dorado & Polvo Dulce" },
+          { num: "#002", file: "mochibun_002.png", path: "public/assets/bakies/mochibun/mochibun_002.png", flavor: "Flor de Sakura & Melocotón Suave" }
+        ]
+      },
+      {
+        id: "jellytopus",
+        name: "Jellytopus",
+        icon: "🐙",
+        variants: [
+          { num: "#001", file: "jellytopus_001.png", path: "public/assets/bakies/jellytopus/jellytopus_001.png", flavor: "Gelatina Glacial de Menta & Mora Azul" },
+          { num: "#002", file: "jellytopus_002.png", path: "public/assets/bakies/jellytopus/jellytopus_002.png", flavor: "Frambuesa Roja & Cristales de Azúcar" }
+        ]
+      },
+      {
+        id: "merinchick",
+        name: "Merinchick",
+        icon: "🐦",
+        variants: [
+          { num: "#001", file: "merinchick_001.png", path: "public/assets/bakies/merinchick/merinchick_001.png", flavor: "Merengue de Fresa Tostado al Soplete" },
+          { num: "#002", file: "merinchick_002.png", path: "public/assets/bakies/merinchick/merinchick_002.png", flavor: "Limón Amarillo & Picos Flameados" }
+        ]
+      },
+      {
+        id: "chocobat",
+        name: "Chocobat",
+        icon: "🦇",
+        variants: [
+          { num: "#001", file: "chocobat_001.png", path: "public/assets/bakies/chocobat/chocobat_001.png", flavor: "Galleta de Vainilla & Chispas de Confeti" },
+          { num: "#002", file: "chocobat_002.png", path: "public/assets/bakies/chocobat/chocobat_002.png", flavor: "Cacao Negro & Doble Crema" }
+        ]
+      }
+    ];
+
+    // Lista plana de todos los stickers para el sistema gacha (28 en total)
+    const ALL_STICKERS_FLAT = [];
+    BAKIES_DATABASE.forEach(sp => {
+      sp.variants.forEach(v => {
+        ALL_STICKERS_FLAT.push({
+          uid: `${sp.id}_${v.num.replace('#', '')}`,
+          speciesId: sp.id,
+          speciesName: sp.name,
+          speciesIcon: sp.icon,
+          variantNum: v.num,
+          flavor: v.flavor,
+          imagePath: v.path
+        });
+      });
+    });
+
+    const TOTAL_STICKERS = ALL_STICKERS_FLAT.length; // 28
+
+    // Estado del Jugador
+    let userState = {
+      inventory: {}, // { [uid]: count }
+      packsOpened: 0
+    };
+
+    function loadUserState() {
+      try {
+        const saved = localStorage.getItem('bakies_save_v2');
+        if (saved) {
+          userState = JSON.parse(saved);
+        }
+      } catch (e) {
+        console.error("Error loading save", e);
+      }
+    }
+
+    function saveUserState() {
+      try {
+        localStorage.setItem('bakies_save_v2', JSON.stringify(userState));
+      } catch (e) {
+        console.error("Error saving state", e);
+      }
+      updateStatsUI();
+    }
+
+    /* =====================================================================
+       2. PANTALLA DE CARGA (SPLASH SCREEN - 15 SEGUNDOS)
+       ===================================================================== */
+    const LOADING_MESSAGES = [
+      { text: "Batiendo la crema pastelera fresca...", icon: "🍓" },
+      { text: "Horneando galletas de mantequilla dorada...", icon: "🍪" },
+      { text: "Preparando los sobres sellados con foil...", icon: "✨" },
+      { text: "Cortando frutas dulces y frambuesas...", icon: "🍒" },
+      { text: "Atemperando el chocolate más suave...", icon: "🍫" },
+      { text: "Poniendo las chispas de confeti de arcoíris...", icon: "🧁" },
+      { text: "Glaseando los pasteles de la vitrina...", icon: "🍰" },
+      { text: "¡Casi listo! Sintonizando a tus Bakies...", icon: "🌟" }
+    ];
+
+    const SPLASH_DURATION = 15000; // 15 segundos exactos
+    let splashStart = null;
+
+    function runSplashScreen() {
+      const progressBar = document.getElementById('splash-progress');
+      const msgEl = document.getElementById('splash-msg');
+      const enterBtn = document.getElementById('btn-enter-app');
+      
+      let lastMsgIdx = 0;
+
+      function updateLoader(timestamp) {
+        if (!splashStart) splashStart = timestamp;
+        const elapsed = timestamp - splashStart;
+        const progress = Math.min(elapsed / SPLASH_DURATION, 1);
+        
+        progressBar.style.width = (progress * 100) + '%';
+
+        const currentMsgIdx = Math.min(
+          Math.floor(progress * LOADING_MESSAGES.length),
+          LOADING_MESSAGES.length - 1
+        );
+
+        if (currentMsgIdx !== lastMsgIdx) {
+          lastMsgIdx = currentMsgIdx;
+          msgEl.style.opacity = 0;
+          setTimeout(() => {
+            msgEl.innerHTML = `<span>${LOADING_MESSAGES[currentMsgIdx].icon}</span> <span>${LOADING_MESSAGES[currentMsgIdx].text}</span>`;
+            msgEl.style.opacity = 1;
+          }, 150);
+        }
+
+        if (progress < 1) {
+          requestAnimationFrame(updateLoader);
+        } else {
+          msgEl.innerHTML = `<span>🎉</span> <span>¡Pastelería lista para abrir!</span>`;
+          enterBtn.classList.add('ready');
+        }
+      }
+
+      requestAnimationFrame(updateLoader);
+    }
+
+    function enterApp() {
+      const splash = document.getElementById('splash-screen');
+      splash.classList.add('hidden');
+      triggerConfetti(window.innerWidth / 2, window.innerHeight / 2, 40);
+    }
+
+    /* =====================================================================
+       3. APERTURA DE SOBRES (FRAME A FRAME + VFX)
+       Frames: public/assets/sobres/frame00.png a frame05.png
+       ===================================================================== */
+    const PACK_FRAMES = [
+      "public/assets/sobres/frame00.png",
+      "public/assets/sobres/frame01.png",
+      "public/assets/sobres/frame02.png",
+      "public/assets/sobres/frame03.png",
+      "public/assets/sobres/frame04.png",
+      "public/assets/sobres/frame05.png"
+    ];
+
+    let isOpeningPack = false;
+
+    // Precargar frames
+    PACK_FRAMES.forEach(src => {
+      const img = new Image();
+      img.src = src;
+    });
+
+    function startPackOpening() {
+      if (isOpeningPack) return;
+      isOpeningPack = true;
+
+      const packImg = document.getElementById('pack-img');
+      const openBtn = document.getElementById('btn-open');
+      const packWrapper = document.getElementById('pack-wrapper');
+      
+      openBtn.disabled = true;
+      packWrapper.classList.add('opening');
+
+      let currentFrame = 0;
+      const frameInterval = 280; // ms por frame
+
+      const timer = setInterval(() => {
+        currentFrame++;
+        if (currentFrame < PACK_FRAMES.length) {
+          packImg.src = PACK_FRAMES[currentFrame];
+          burstPackSparks(currentFrame);
+        } else {
+          clearInterval(timer);
+          
+          setTimeout(() => {
+            revealPackRewards();
+            
+            setTimeout(() => {
+              packImg.src = PACK_FRAMES[0];
+              packWrapper.classList.remove('opening');
+              openBtn.disabled = false;
+              isOpeningPack = false;
+            }, 600);
+          }, 350);
+        }
+      }, frameInterval);
+    }
+
+    function burstPackSparks(frameIndex) {
+      const pack = document.getElementById('pack-wrapper');
+      const rect = pack.getBoundingClientRect();
+      
+      const tearRatio = frameIndex / (PACK_FRAMES.length - 1);
+      const tearX = rect.right - (rect.width * tearRatio * 0.85);
+      const tearY = rect.top + 45;
+
+      triggerConfetti(tearX, tearY, 15 + frameIndex * 5);
+    }
+
+    function revealPackRewards() {
+      userState.packsOpened++;
+
+      const pulledCards = [];
+      for (let i = 0; i < 3; i++) {
+        const randIndex = Math.floor(Math.random() * ALL_STICKERS_FLAT.length);
+        const item = ALL_STICKERS_FLAT[randIndex];
+        const isNew = !userState.inventory[item.uid];
+        
+        userState.inventory[item.uid] = (userState.inventory[item.uid] || 0) + 1;
+        pulledCards.push({ item: item, isNew: isNew });
+      }
+
+      saveUserState();
+
+      const listEl = document.getElementById('reward-cards-list');
+      listEl.innerHTML = '';
+
+      pulledCards.forEach((c, idx) => {
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'reward-card-pop';
+        cardDiv.style.animationDelay = (idx * 0.15) + 's';
+        cardDiv.innerHTML = `
+          <img src="${c.item.imagePath}" alt="${c.item.speciesName}">
+          <span style="font-size: 12px; font-weight: 700; color: #7c4118; margin-top: 6px;">${c.item.speciesName}</span>
+          <span style="font-size: 11px; font-weight: 700; color: #9c7149;">${c.item.variantNum}</span>
+          ${c.isNew ? '<span class="reward-badge-new">¡NUEVO!</span>' : ''}
+        `;
+        listEl.appendChild(cardDiv);
+      });
+
+      document.getElementById('modal-reward').classList.add('active');
+      triggerConfetti(window.innerWidth / 2, window.innerHeight / 2, 60);
+      renderAlbum();
+    }
+
+    function closeRewardModal() {
+      document.getElementById('modal-reward').classList.remove('active');
+    }
+
+    /* =====================================================================
+       4. ÁLBUM DE COLECCIÓN CLASIFICADO
+       ===================================================================== */
+    let activeFilter = 'all';
+
+    function renderFilters() {
+      const container = document.getElementById('species-filter-container');
+      container.innerHTML = `<button class="filter-chip ${activeFilter === 'all' ? 'active' : ''}" onclick="setFilter('all')">Todos</button>`;
+
+      BAKIES_DATABASE.forEach(sp => {
+        const btn = document.createElement('button');
+        btn.className = `filter-chip ${activeFilter === sp.id ? 'active' : ''}`;
+        btn.innerText = `${sp.icon} ${sp.name}`;
+        btn.onclick = () => setFilter(sp.id);
+        container.appendChild(btn);
+      });
+    }
+
+    function setFilter(filterId) {
+      activeFilter = filterId;
+      renderFilters();
+      renderAlbum();
+    }
+
+    function renderAlbum() {
+      const container = document.getElementById('album-groups-container');
+      container.innerHTML = '';
+
+      const filteredSpecies = activeFilter === 'all' 
+        ? BAKIES_DATABASE 
+        : BAKIES_DATABASE.filter(s => s.id === activeFilter);
+
+      filteredSpecies.forEach(sp => {
+        let unlockedCount = 0;
+        sp.variants.forEach(v => {
+          const uid = `${sp.id}_${v.num.replace('#', '')}`;
+          if (userState.inventory[uid]) unlockedCount++;
+        });
+
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'creature-card-group';
+        
+        groupDiv.innerHTML = `
+          <div class="group-title">
+            <span>${sp.icon} ${sp.name}</span>
+            <span class="group-progress">${unlockedCount} / ${sp.variants.length} Coleccionados</span>
+          </div>
+          <div class="stickers-grid" id="grid-${sp.id}"></div>
+        `;
+
+        container.appendChild(groupDiv);
+
+        const grid = groupDiv.querySelector(`#grid-${sp.id}`);
+        sp.variants.forEach(v => {
+          const uid = `${sp.id}_${v.num.replace('#', '')}`;
+          const qty = userState.inventory[uid] || 0;
+          const isUnlocked = qty > 0;
+
+          const stickerEl = document.createElement('div');
+          stickerEl.className = `sticker-item ${isUnlocked ? 'unlocked' : 'locked'}`;
+          stickerEl.onclick = () => openStickerDetail(sp, v, qty);
+
+          stickerEl.innerHTML = `
+            ${qty > 1 ? `<div class="sticker-qty-badge">x${qty}</div>` : ''}
+            <div class="sticker-img-box">
+              <img src="${v.path}" alt="${sp.name}">
+              ${!isUnlocked ? '<div class="lock-overlay">🔒</div>' : ''}
+            </div>
+            <div class="sticker-name">${isUnlocked ? sp.name : '???'}</div>
+            <div class="sticker-number">${v.num}</div>
+          `;
+          grid.appendChild(stickerEl);
+        });
+      });
+    }
+
+    function openStickerDetail(sp, v, qty) {
+      if (qty <= 0) return;
+
+      document.getElementById('detail-img').src = v.path;
+      document.getElementById('detail-name').innerText = `${sp.icon} ${sp.name}`;
+      document.getElementById('detail-number').innerText = `Variante ${v.num}`;
+      document.getElementById('detail-desc').innerText = `Receta & Sabor: ${v.flavor}. Horneado con amor en la pastelería BAKIES.`;
+      document.getElementById('detail-count').innerText = `Tienes ${qty} copia(s) en tu inventario.`;
+      
+      document.getElementById('modal-detail').classList.add('active');
+    }
+
+    function closeDetailModal(e) {
+      if (!e || e.target.id === 'modal-detail' || e.target.classList.contains('close-modal-btn')) {
+        document.getElementById('modal-detail').classList.remove('active');
+      }
+    }
+
+    function updateStatsUI() {
+      let uniqueCollected = 0;
+      ALL_STICKERS_FLAT.forEach(item => {
+        if (userState.inventory[item.uid] > 0) uniqueCollected++;
+      });
+
+      document.getElementById('stat-collected').innerText = `${uniqueCollected} / ${TOTAL_STICKERS}`;
+      document.getElementById('stat-opened').innerText = userState.packsOpened;
+    }
+
+    function switchTab(tabId) {
+      document.getElementById('tab-btn-store').classList.toggle('active', tabId === 'store');
+      document.getElementById('tab-btn-album').classList.toggle('active', tabId === 'album');
+
+      document.getElementById('view-store').classList.toggle('active', tabId === 'store');
+      document.getElementById('view-album').classList.toggle('active', tabId === 'album');
+
+      if (tabId === 'album') {
+        renderAlbum();
+      }
+    }
+
+    /* =====================================================================
+       5. CONFETI
+       ===================================================================== */
+    const canvas = document.getElementById('confetti-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    function triggerConfetti(originX, originY, count = 30) {
+      const colors = ['#f43f5e', '#fbbf24', '#38bdf8', '#34d399', '#a855f7', '#fb923c'];
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 8 + 3;
+        particles.push({
+          x: originX,
+          y: originY,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 2,
+          size: Math.random() * 8 + 4,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: Math.random() * 360,
+          vRot: (Math.random() - 0.5) * 10,
+          opacity: 1,
+          decay: Math.random() * 0.02 + 0.015
+        });
+      }
+    }
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.25;
+        p.rotation += p.vRot;
+        p.opacity -= p.decay;
+
+        if (p.opacity <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+
+        ctx.save();
+        ctx.globalAlpha = p.opacity;
+        ctx.translate(p.x, p.y);
+        ctx.rotate((p.rotation * Math.PI) / 180);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
+        ctx.restore();
+      }
+
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    /* =====================================================================
+       INICIALIZACIÓN
+       ===================================================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      loadUserState();
+      updateStatsUI();
+      renderFilters();
+      renderAlbum();
+      runSplashScreen();
+    });
+  </script>
+</body>
+</html>
